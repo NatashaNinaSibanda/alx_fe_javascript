@@ -61,7 +61,6 @@ function addQuote() {
   populateCategories();
   displayQuotes();
 
-  // Post to server
   postQuoteToServer(newQuote);
 
   quoteInput.value = "";
@@ -194,7 +193,6 @@ async function syncQuotes() {
       category: "Server"
     }));
 
-    // Conflict resolution: server wins
     const map = new Map(quotes.map(q => [`${q.text}::${q.author}`, q]));
     let conflictsResolved = 0;
 
@@ -215,9 +213,10 @@ async function syncQuotes() {
 
     if (conflictsResolved > 0) {
       alert(`${conflictsResolved} local quote(s) updated with server data.`);
-    } else {
-      console.log("Quotes synced with server. No conflicts.");
     }
+
+    //  Notification for successful sync
+    alert("Quotes synced with server!");
 
   } catch (error) {
     console.error("Sync error:", error);
@@ -233,7 +232,6 @@ async function postQuoteToServer(quote) {
     });
 
     if (!response.ok) throw new Error("Failed to post quote to server");
-
     const data = await response.json();
     console.log("Quote posted successfully:", data);
   } catch (error) {
@@ -259,7 +257,7 @@ window.onload = function() {
     quoteDisplay.textContent = `"${q.text}" — ${q.author} [${q.category}]`;
   }
 
-  syncQuotes(); // initial sync
+  syncQuotes();
 };
 
 // ===============================
@@ -273,4 +271,4 @@ importFileInput.addEventListener("change", importFromJsonFile);
 if (syncBtn) syncBtn.addEventListener("click", syncQuotes);
 
 // Auto-sync every 60 seconds
-setInterval(syncQuotes, 60000);
+setInterval(syncQuotes, 60000);;
