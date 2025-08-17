@@ -16,6 +16,9 @@ const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
 const syncBtn = document.getElementById("syncBtn");
 
+// Mock server URL
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
+
 // Load saved quotes or defaults
 let quotes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
   { text: "The best way to predict the future is to create it.", author: "Peter Drucker", category: "Motivation" },
@@ -55,18 +58,20 @@ function addQuote() {
   const newQuote = { text, author, category };
   quotes.push(newQuote);
   saveQuotes();
+  populateCategories();
+  displayQuotes();
+
+  // Post to server
+  postQuoteToServer(newQuote);
 
   quoteInput.value = "";
   authorInput.value = "";
   categoryInput.value = "";
-
-  populateCategories();
-  displayQuotes();
   alert("Quote added successfully!");
 }
 
 // ===============================
-// Display Quotes (Filtered List)
+// Display Quotes
 // ===============================
 function displayQuotes() {
   const selectedCategory = categoryFilter.value || "all";
@@ -177,8 +182,6 @@ function importFromJsonFile(event) {
 // ===============================
 // Server Sync & Conflict Resolution
 // ===============================
-const SERVER_URL = "https://jsonplaceholder.typicode.com/posts"; // mock server
-
 async function fetchQuotesFromServer() {
   try {
     const response = await fetch(SERVER_URL);
@@ -221,6 +224,25 @@ function resolveConflicts(serverQuotes) {
   }
 }
 
+async function postQuoteToServer(quote) {
+  try {
+    const response = await fetch(SERVER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(quote)
+    });
+
+    if (!response.ok) throw new Error("Failed to post quote to server");
+
+    const data = await response.json();
+    console.log("Quote posted successfully:", data);
+  } catch (error) {
+    console.error("Error posting quote:", error);
+  }
+}
+
 // ===============================
 // Initialization
 // ===============================
@@ -234,7 +256,7 @@ window.onload = function() {
     quoteDisplay.textContent = `"${q.text}" — ${q.author} [${q.category}]`;
   }
 
- fetchQuotesFromServer(); // initial sync
+  fetchQuotesFromServer(); // initial sync
 };
 
 // ===============================
@@ -248,4 +270,4 @@ importFileInput.addEventListener("change", importFromJsonFile);
 if (syncBtn) syncBtn.addEventListener("click", fetchQuotesFromServer);
 
 // Auto-sync every 60 seconds
-setInterval( fetchQuotesFromServer, 60000);
+setInterval(fetchQuotesFromServer, 60000);
