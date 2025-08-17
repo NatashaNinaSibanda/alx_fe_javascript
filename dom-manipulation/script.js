@@ -12,8 +12,10 @@ const quotesList = document.getElementById("quotesList");
 const categoryFilter = document.getElementById("categoryFilter");
 const importFileInput = document.getElementById("importFile");
 const exportBtn = document.getElementById("exportBtn");
+const quoteDisplay = document.getElementById("quoteDisplay");
+const newQuoteBtn = document.getElementById("newQuote");
 
-// Load saved quotes or use defaults
+// Load saved quotes or defaults
 let quotes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
   { text: "The best way to predict the future is to create it.", author: "Peter Drucker", category: "Motivation" },
   { text: "Do not wait to strike till the iron is hot; but make it hot by striking.", author: "William B. Sprague", category: "Action" },
@@ -44,7 +46,7 @@ function addQuote() {
     return;
   }
 
-  // Prevent duplicate quotes
+  // Prevent duplicates
   if (quotes.some(q => q.text.toLowerCase() === text.toLowerCase())) {
     alert("This quote already exists!");
     return;
@@ -64,7 +66,7 @@ function addQuote() {
 }
 
 // ===============================
-// Display Quotes
+// Display Quotes (Filtered List)
 // ===============================
 function displayQuotes() {
   const selectedCategory = categoryFilter.value || "all";
@@ -92,15 +94,14 @@ function showRandomQuote() {
     : quotes.filter(q => q.category === selectedCategory);
 
   if (filteredQuotes.length === 0) {
-    alert("No quotes available for this category.");
+    quoteDisplay.textContent = "No quotes available for this category.";
     return;
   }
 
   const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
   const randomQuote = filteredQuotes[randomIndex];
 
-  alert(`"${randomQuote.text}" — ${randomQuote.author}`);
-
+  quoteDisplay.textContent = `"${randomQuote.text}" — ${randomQuote.author} [${randomQuote.category}]`;
   sessionStorage.setItem(SESSION_LAST_KEY, JSON.stringify(randomQuote));
 }
 
@@ -118,7 +119,6 @@ function populateCategories() {
     categoryFilter.appendChild(option);
   });
 
-  // Restore saved filter if exists
   const savedFilter = localStorage.getItem(STORAGE_FILTER_KEY);
   if (savedFilter) {
     categoryFilter.value = savedFilter;
@@ -132,6 +132,7 @@ function filterQuotes() {
   const selectedCategory = categoryFilter.value;
   saveSelectedFilter(selectedCategory);
   displayQuotes();
+  showRandomQuote(); // optional: update random quote when filter changes
 }
 
 // ===============================
@@ -170,7 +171,7 @@ function importFromJsonFile(event) {
       } else {
         alert("Invalid JSON format. Must be an array of quotes.");
       }
-      importFileInput.value = ""; // clear input
+      importFileInput.value = "";
     } catch {
       alert("Error reading JSON file.");
     }
@@ -185,11 +186,10 @@ window.onload = function() {
   populateCategories();
   displayQuotes();
 
-  // Restore last viewed quote
   const lastViewed = sessionStorage.getItem(SESSION_LAST_KEY);
   if (lastViewed) {
     const q = JSON.parse(lastViewed);
-    console.log("Last viewed quote:", `"${q.text}" — ${q.author}`);
+    quoteDisplay.textContent = `"${q.text}" — ${q.author} [${q.category}]`;
   }
 };
 
@@ -198,5 +198,6 @@ window.onload = function() {
 // ===============================
 addQuoteBtn.addEventListener("click", addQuote);
 categoryFilter.addEventListener("change", filterQuotes);
+newQuoteBtn.addEventListener("click", showRandomQuote);
 exportBtn.addEventListener("click", exportToJsonFile);
 importFileInput.addEventListener("change", importFromJsonFile);
