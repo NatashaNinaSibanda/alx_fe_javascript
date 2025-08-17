@@ -179,7 +179,7 @@ function importFromJsonFile(event) {
 // ===============================
 const SERVER_URL = "https://jsonplaceholder.typicode.com/posts"; // mock server
 
-async function fetchServerQuotes() {
+async function fetchQuotesFromServer() {
   try {
     const response = await fetch(SERVER_URL);
     if (!response.ok) throw new Error("Failed to fetch server quotes");
@@ -234,7 +234,7 @@ window.onload = function() {
     quoteDisplay.textContent = `"${q.text}" — ${q.author} [${q.category}]`;
   }
 
-  fetchServerQuotes(); // initial sync
+ fetchQuotesFromServer(); // initial sync
 };
 
 // ===============================
@@ -245,7 +245,7 @@ categoryFilter.addEventListener("change", filterQuotes);
 newQuoteBtn.addEventListener("click", showRandomQuote);
 exportBtn.addEventListener("click", exportToJsonFile);
 importFileInput.addEventListener("change", importFromJsonFile);
-if (syncBtn) syncBtn.addEventListener("click", fetchServerQuotes);
+if (syncBtn) syncBtn.addEventListener("click", fetchQuotesFromServer);
 
 // Auto-sync every 60 seconds
-setInterval(fetchServerQuotes, 60000);addQuote
+setInterval( fetchQuotesFromServer, 60000);
