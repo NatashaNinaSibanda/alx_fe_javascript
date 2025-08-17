@@ -14,6 +14,7 @@ const importFileInput = document.getElementById("importFile");
 const exportBtn = document.getElementById("exportBtn");
 const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
+const syncBtn = document.getElementById("syncBtn");
 
 // Load saved quotes or defaults
 let quotes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
@@ -46,7 +47,6 @@ function addQuote() {
     return;
   }
 
-  // Prevent duplicates
   if (quotes.some(q => q.text.toLowerCase() === text.toLowerCase())) {
     alert("This quote already exists!");
     return;
@@ -120,9 +120,7 @@ function populateCategories() {
   });
 
   const savedFilter = localStorage.getItem(STORAGE_FILTER_KEY);
-  if (savedFilter) {
-    categoryFilter.value = savedFilter;
-  }
+  if (savedFilter) categoryFilter.value = savedFilter;
 }
 
 // ===============================
@@ -132,11 +130,11 @@ function filterQuotes() {
   const selectedCategory = categoryFilter.value;
   saveSelectedFilter(selectedCategory);
   displayQuotes();
-  showRandomQuote(); // optional: update random quote when filter changes
+  showRandomQuote();
 }
 
 // ===============================
-// Export JSON
+// Import/Export JSON
 // ===============================
 function exportToJsonFile() {
   const jsonData = JSON.stringify(quotes, null, 2);
@@ -151,9 +149,6 @@ function exportToJsonFile() {
   URL.revokeObjectURL(url);
 }
 
-// ===============================
-// Import JSON
-// ===============================
 function importFromJsonFile(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -180,6 +175,53 @@ function importFromJsonFile(event) {
 }
 
 // ===============================
+// Server Sync & Conflict Resolution
+// ===============================
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts"; // mock server
+
+async function fetchServerQuotes() {
+  try {
+    const response = await fetch(SERVER_URL);
+    if (!response.ok) throw new Error("Failed to fetch server quotes");
+
+    const serverData = await response.json();
+    const serverQuotes = serverData.slice(0, 10).map(post => ({
+      text: post.title,
+      author: post.userId ? `User ${post.userId}` : "Server",
+      category: "Server"
+    }));
+
+    resolveConflicts(serverQuotes);
+  } catch (error) {
+    console.error("Server fetch error:", error);
+  }
+}
+
+function resolveConflicts(serverQuotes) {
+  const map = new Map(quotes.map(q => [`${q.text}::${q.author}`, q]));
+  let conflictsResolved = 0;
+
+  serverQuotes.forEach(sq => {
+    const key = `${sq.text}::${sq.author}`;
+    if (!map.has(key)) {
+      map.set(key, sq);
+    } else {
+      map.set(key, sq); // server wins
+      conflictsResolved++;
+    }
+  });
+
+  quotes = Array.from(map.values());
+  saveQuotes();
+  populateCategories();
+  displayQuotes();
+
+  if (conflictsResolved > 0) {
+    alert(`${conflictsResolved} local quote(s) updated with server data.`);
+  }
+}
+
+// ===============================
 // Initialization
 // ===============================
 window.onload = function() {
@@ -191,6 +233,8 @@ window.onload = function() {
     const q = JSON.parse(lastViewed);
     quoteDisplay.textContent = `"${q.text}" — ${q.author} [${q.category}]`;
   }
+
+  fetchServerQuotes(); // initial sync
 };
 
 // ===============================
@@ -201,3 +245,7 @@ categoryFilter.addEventListener("change", filterQuotes);
 newQuoteBtn.addEventListener("click", showRandomQuote);
 exportBtn.addEventListener("click", exportToJsonFile);
 importFileInput.addEventListener("change", importFromJsonFile);
+if (syncBtn) syncBtn.addEventListener("click", fetchServerQuotes);
+
+// Auto-sync every 60 seconds
+setInterval(fetchServerQuotes, 60000);addQuote
