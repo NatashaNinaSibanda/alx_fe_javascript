@@ -213,7 +213,6 @@ async function syncQuotes() {
     populateCategories();
     displayQuotes();
 
-    // UI notification
     if (conflictsResolved > 0) {
       alert(`${conflictsResolved} local quote(s) updated with server data.`);
     } else {
@@ -229,9 +228,7 @@ async function postQuoteToServer(quote) {
   try {
     const response = await fetch(SERVER_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(quote)
     });
 
@@ -243,6 +240,11 @@ async function postQuoteToServer(quote) {
     console.error("Error posting quote:", error);
   }
 }
+
+// ===============================
+// Alias for compatibility
+// ===============================
+const fetchQuotesFromServer = syncQuotes;
 
 // ===============================
 // Initialization
