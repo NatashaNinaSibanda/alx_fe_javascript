@@ -12,6 +12,13 @@
   <div id="quoteDisplay"></div>
   <button id="newQuote">Show New Quote</button>
 
+  <!-- JSON Export / Import controls -->
+  <div id="ioControls" style="margin-top: 1rem;">
+    <button id="exportBtn">Export Quotes (JSON)</button>
+    
+    <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
