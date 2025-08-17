@@ -182,7 +182,7 @@ function importFromJsonFile(event) {
 // ===============================
 // Server Sync & Conflict Resolution
 // ===============================
-async function fetchQuotesFromServer() {
+async function syncQuotes() {
   try {
     const response = await fetch(SERVER_URL);
     if (!response.ok) throw new Error("Failed to fetch server quotes");
@@ -194,33 +194,34 @@ async function fetchQuotesFromServer() {
       category: "Server"
     }));
 
-    resolveConflicts(serverQuotes);
-  } catch (error) {
-    console.error("Server fetch error:", error);
-  }
-}
+    // Conflict resolution: server wins
+    const map = new Map(quotes.map(q => [`${q.text}::${q.author}`, q]));
+    let conflictsResolved = 0;
 
-function resolveConflicts(serverQuotes) {
-  const map = new Map(quotes.map(q => [`${q.text}::${q.author}`, q]));
-  let conflictsResolved = 0;
+    serverQuotes.forEach(sq => {
+      const key = `${sq.text}::${sq.author}`;
+      if (!map.has(key)) {
+        map.set(key, sq);
+      } else {
+        map.set(key, sq); // server wins
+        conflictsResolved++;
+      }
+    });
 
-  serverQuotes.forEach(sq => {
-    const key = `${sq.text}::${sq.author}`;
-    if (!map.has(key)) {
-      map.set(key, sq);
+    quotes = Array.from(map.values());
+    saveQuotes();
+    populateCategories();
+    displayQuotes();
+
+    // UI notification
+    if (conflictsResolved > 0) {
+      alert(`${conflictsResolved} local quote(s) updated with server data.`);
     } else {
-      map.set(key, sq); // server wins
-      conflictsResolved++;
+      console.log("Quotes synced with server. No conflicts.");
     }
-  });
 
-  quotes = Array.from(map.values());
-  saveQuotes();
-  populateCategories();
-  displayQuotes();
-
-  if (conflictsResolved > 0) {
-    alert(`${conflictsResolved} local quote(s) updated with server data.`);
+  } catch (error) {
+    console.error("Sync error:", error);
   }
 }
 
@@ -256,7 +257,7 @@ window.onload = function() {
     quoteDisplay.textContent = `"${q.text}" — ${q.author} [${q.category}]`;
   }
 
-  fetchQuotesFromServer(); // initial sync
+  syncQuotes(); // initial sync
 };
 
 // ===============================
@@ -267,7 +268,7 @@ categoryFilter.addEventListener("change", filterQuotes);
 newQuoteBtn.addEventListener("click", showRandomQuote);
 exportBtn.addEventListener("click", exportToJsonFile);
 importFileInput.addEventListener("change", importFromJsonFile);
-if (syncBtn) syncBtn.addEventListener("click", fetchQuotesFromServer);
+if (syncBtn) syncBtn.addEventListener("click", syncQuotes);
 
 // Auto-sync every 60 seconds
-setInterval(fetchQuotesFromServer, 60000);
+setInterval(syncQuotes, 60000);
